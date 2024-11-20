@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
     float k = 0.3;
-    int steps = 4;
+    int steps = 2;
 
     int matrix_size = 134;
     float input_matrix[matrix_size][matrix_size];
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
         copy_row(input_matrix[i + mpi_rank], process_cache[i], matrix_size);
     }
 
+    // compute
     for (int time = 0; time < steps; time++)
     {
         // printf("start step %d on process %d\n", time, mpi_rank);
@@ -101,12 +102,20 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (mpi_rank == 0)
+    // collect
+    if (mpi_rank != 0)
+    {
+        for (int row = 1; row < process_cache_size - 1; row++)
+        {
+            MPI_Send(process_cache[row], matrix_size, MPI_FLOAT, 0, mpi_rank + row, MPI_COMM_WORLD);
+        }
+    }
+    else
     {
         // own content
-        for (int i = 1; i < process_cache_size - 1; i++)
+        for (int row = 1; row < process_cache_size - 1; row++)
         {
-            copy_row(process_cache[i], input_matrix[i], matrix_size);
+            copy_row(process_cache[row], input_matrix[row], matrix_size);
         }
 
         // other processes
@@ -114,22 +123,15 @@ int main(int argc, char *argv[])
 
         for (int process = 1; process < mpi_size; process++)
         {
-            for (int row = 1; row < rows_per_process - 2; row++)
+            for (int row = 1; row < process_cache_size - 1; row++)
             {
                 MPI_Recv(finalize_cache, matrix_size, MPI_FLOAT, process, process + row, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                copy_row(finalize_cache, input_matrix[process * rows_per_process + row], matrix_size);
+                copy_row(finalize_cache, input_matrix[process * rows_per_process + row + 1], matrix_size); // + 1 because we skipped borders in line 56: (matrix_size - 2)
             }
         }
 
         // export
         export_image("parallel_end", matrix_size, input_matrix);
-    }
-    else
-    {
-        for (int row = 1; row < process_cache_size - 1; row++)
-        {
-            MPI_Send(process_cache[row], matrix_size, MPI_FLOAT, 0, mpi_rank + row, MPI_COMM_WORLD);
-        }
     }
 
     MPI_Finalize();
