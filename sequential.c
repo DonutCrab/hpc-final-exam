@@ -2,20 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <png.h> // libpng
-
 #include "qr.c"
 #include "image.c"
+#include "util.c"
 
 // cc sequential.c -o out/sequential -I/opt/homebrew/include -L/opt/homebrew/lib -lpng && ./out/sequential
-
-void copy_row(float *from, float *to, int width)
-{
-    for (int i = 0; i < width; i++)
-    {
-        to[i] = from[i];
-    }
-}
 
 int main()
 {
@@ -24,9 +15,6 @@ int main()
 
     int size = 134;
     float input_matrix[size][size];
-
-    // float boundary_condition = 0.0;
-    // boundary_condition constant?
 
     int pixel_multiplier = size / qr_size;
     int offset = (size - (pixel_multiplier * qr_size)) / 2;
@@ -86,7 +74,7 @@ int main()
         }
     }
 
-    export_image("setpss", size, input_matrix);
+    export_image("sequential_end", size, input_matrix);
 
     return 0;
 }
