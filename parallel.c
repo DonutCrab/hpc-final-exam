@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
+#include <time.h>
 
 #include "qr.c"
 #include "image.c"
@@ -61,6 +62,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    // START
+    clock_t start_time = clock();
 
     int rows_per_process = (matrix_size - 2) / mpi_size;
 
@@ -136,6 +139,11 @@ int main(int argc, char *argv[])
                 copy_row(finalize_cache, input_matrix[process * rows_per_process + row], matrix_size);
             }
         }
+
+        // END
+        clock_t end_time = clock();
+        double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+        printf("\nExecution time: %f seconds\n", time_taken);
 
         // export
         export_image("parallel_end", matrix_size, input_matrix);

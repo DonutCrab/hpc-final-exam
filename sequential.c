@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "qr.c"
 #include "image.c"
@@ -49,6 +50,9 @@ int main(int argc, char *argv[])
         }
     }
 
+    // START
+    clock_t start_time = clock();
+
     float cache_row[size];
     float cache_value;
 
@@ -77,6 +81,11 @@ int main(int argc, char *argv[])
             copy_row(new_row, input_matrix[row], size);
         }
     }
+
+    // END
+    clock_t end_time = clock();
+    double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("\nExecution time: %f seconds\n", time_taken);
 
     export_image("sequential_end", size, input_matrix);
 
