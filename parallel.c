@@ -12,9 +12,9 @@
 int main(int argc, char *argv[])
 {
     float k = 0.3;
-    int steps = 2;
+    int steps = 50;
 
-    int matrix_size = 134;
+    int matrix_size = 266; // num threads * 33 + 2
     float input_matrix[matrix_size][matrix_size];
 
     int pixel_multiplier = matrix_size / qr_size;
@@ -54,7 +54,6 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     int rows_per_process = (matrix_size - 2) / mpi_size;
-    // printf("rows per process %d, %d/%d\n", rows_per_process, rows_per_process * mpi_size, matrix_size);
 
     float cache_value;
 
@@ -63,7 +62,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < process_cache_size; i++)
     {
-        copy_row(input_matrix[i + mpi_rank], process_cache[i], matrix_size);
+        copy_row(input_matrix[i + mpi_rank * rows_per_process], process_cache[i], matrix_size);
     }
 
     // compute
@@ -71,9 +70,8 @@ int main(int argc, char *argv[])
     {
         // printf("start step %d on process %d\n", time, mpi_rank);
 
-        for (int row = 1; row < process_cache_size; row++)
+        for (int row = 1; row < process_cache_size - 1; row++)
         {
-
             cache_value = process_cache[row][0];
 
             for (int col = 1; col < matrix_size - 1; col++)
@@ -90,14 +88,14 @@ int main(int argc, char *argv[])
         // exchange top boundary
         if (mpi_rank > 0)
         {
-            MPI_Send(process_cache[0], matrix_size, MPI_FLOAT, mpi_rank - 1, 1, MPI_COMM_WORLD);
+            MPI_Send(process_cache[1], matrix_size, MPI_FLOAT, mpi_rank - 1, 1, MPI_COMM_WORLD);
             MPI_Recv(process_cache[0], matrix_size, MPI_FLOAT, mpi_rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // exchange bottom boundary
         if (mpi_rank < mpi_size - 1)
         {
-            MPI_Send(process_cache[process_cache_size - 1], matrix_size, MPI_FLOAT, mpi_rank + 1, 0, MPI_COMM_WORLD);
+            MPI_Send(process_cache[process_cache_size - 2], matrix_size, MPI_FLOAT, mpi_rank + 1, 0, MPI_COMM_WORLD);
             MPI_Recv(process_cache[process_cache_size - 1], matrix_size, MPI_FLOAT, mpi_rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
@@ -119,14 +117,14 @@ int main(int argc, char *argv[])
         }
 
         // other processes
-        float finalize_cache[matrix_size];
-
         for (int process = 1; process < mpi_size; process++)
         {
             for (int row = 1; row < process_cache_size - 1; row++)
             {
+                float finalize_cache[matrix_size];
+
                 MPI_Recv(finalize_cache, matrix_size, MPI_FLOAT, process, process + row, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                copy_row(finalize_cache, input_matrix[process * rows_per_process + row + 1], matrix_size); // + 1 because we skipped borders in line 56: (matrix_size - 2)
+                copy_row(finalize_cache, input_matrix[process * rows_per_process + row], matrix_size);
             }
         }
 
