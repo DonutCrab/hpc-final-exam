@@ -6,14 +6,18 @@
 #include "image.c"
 #include "util.c"
 
-// cc sequential.c -o out/sequential -I/opt/homebrew/include -L/opt/homebrew/lib -lpng && ./out/sequential
+// cc sequential.c -o out/sequential -I/opt/homebrew/include -L/opt/homebrew/lib -lpng
+// ./out/sequential
 
-int main()
+int main(int argc, char *argv[])
 {
-    float k = 0.3;
-    int steps = 20;
+    printf("Steps: %s\n", argv[1]);
+    printf("Size: %s\n", argv[2]);
 
-    int size = 134;
+    float k = 0.3;
+    int steps = atoi(argv[1]);
+
+    int size = atoi(argv[2]) * 33 + 2;
     float input_matrix[size][size];
 
     int pixel_multiplier = size / qr_size;

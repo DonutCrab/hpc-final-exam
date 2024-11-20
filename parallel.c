@@ -7,14 +7,27 @@
 #include "image.c"
 #include "util.c"
 
-// mpicc parallel.c -o out/parallel -I/opt/homebrew/include -L/opt/homebrew/lib -lpng && mpirun -np 4 ./out/parallel
+// mpicc parallel.c -o out/parallel -I/opt/homebrew/include -L/opt/homebrew/lib -lpng
+// mpirun -np 4 ./out/parallel
 
 int main(int argc, char *argv[])
 {
-    float k = 0.3;
-    int steps = 50;
+    int mpi_rank, mpi_size;
 
-    int matrix_size = 266; // num threads * 33 + 2
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+
+    if (mpi_rank == 0)
+    {
+        printf("Steps: %s\n", argv[1]);
+        printf("Size: %s\n", argv[2]);
+    }
+
+    float k = 0.3;
+    int steps = atoi(argv[1]);
+
+    int matrix_size = atoi(argv[2]) * 33 + 2;
     float input_matrix[matrix_size][matrix_size];
 
     int pixel_multiplier = matrix_size / qr_size;
@@ -22,6 +35,7 @@ int main(int argc, char *argv[])
 
     // TODO: extract
     // fill input_matrix
+    // TODO: This is executed four times!
     for (int i = 0; i < matrix_size; i++)
     {
         for (int j = 0; j < matrix_size; j++)
@@ -47,11 +61,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    int mpi_rank, mpi_size;
-
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     int rows_per_process = (matrix_size - 2) / mpi_size;
 
