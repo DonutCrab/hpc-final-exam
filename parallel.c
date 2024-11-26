@@ -38,74 +38,69 @@ int main(int argc, char *argv[])
 
     int rows_per_process = (matrix_size - 2) / mpi_size;
 
-    int process_cache_size = rows_per_process + 2;
-    float process_cache[process_cache_size][matrix_size];
-
-    for (int i = 0; i < process_cache_size; i++)
-    {
-        copy_row(input_matrix[i + mpi_rank * rows_per_process], process_cache[i], matrix_size);
-    }
+    int start_row = mpi_rank * rows_per_process + 1;
+    int end_row = (mpi_rank + 1) * rows_per_process;
 
     // compute
     for (int time = 0; time < steps; time++)
     {
         float cache_value;
 
-        for (int row = 1; row < process_cache_size - 1; row++)
+        for (int row = start_row; row <= end_row; row++)
         {
-            cache_value = process_cache[row][0];
+            cache_value = input_matrix[row][0];
 
             for (int col = 1; col < matrix_size - 1; col++)
             {
-                float new_y = k * process_cache[row - 1][col] + 2 * (1 - k) * process_cache[row][col] + k * process_cache[row + 1][col];
-                float new_x = k * process_cache[row][col - 1] + 2 * (1 - k) * process_cache[row][col] + k * process_cache[row][col + 1];
+                float new_y = k * input_matrix[row - 1][col] + 2 * (1 - k) * input_matrix[row][col] + k * input_matrix[row + 1][col];
+                float new_x = k * input_matrix[row][col - 1] + 2 * (1 - k) * input_matrix[row][col] + k * input_matrix[row][col + 1];
                 float new_value = (new_x + new_y) / 4;
 
-                cache_value = process_cache[row][col];
-                process_cache[row][col] = new_value;
+                cache_value = input_matrix[row][col];
+                input_matrix[row][col] = new_value;
             }
         }
 
         // exchange top boundary
         if (mpi_rank > 0)
         {
-            MPI_Send(process_cache[1], matrix_size, MPI_FLOAT, mpi_rank - 1, 1, MPI_COMM_WORLD);
-            MPI_Recv(process_cache[0], matrix_size, MPI_FLOAT, mpi_rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(input_matrix[start_row], matrix_size, MPI_FLOAT, mpi_rank - 1, 1, MPI_COMM_WORLD);
+            MPI_Recv(input_matrix[start_row - 1], matrix_size, MPI_FLOAT, mpi_rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // exchange bottom boundary
         if (mpi_rank < mpi_size - 1)
         {
-            MPI_Send(process_cache[process_cache_size - 2], matrix_size, MPI_FLOAT, mpi_rank + 1, 0, MPI_COMM_WORLD);
-            MPI_Recv(process_cache[process_cache_size - 1], matrix_size, MPI_FLOAT, mpi_rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(input_matrix[end_row], matrix_size, MPI_FLOAT, mpi_rank + 1, 0, MPI_COMM_WORLD);
+            MPI_Recv(input_matrix[end_row + 1], matrix_size, MPI_FLOAT, mpi_rank + 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
 
     // collect
     if (mpi_rank != 0)
     {
-        for (int row = 1; row < process_cache_size - 1; row++)
+        for (int row = start_row; row <= end_row; row++)
         {
-            MPI_Send(process_cache[row], matrix_size, MPI_FLOAT, 0, mpi_rank + row, MPI_COMM_WORLD);
+            MPI_Send(input_matrix[row], matrix_size, MPI_FLOAT, 0, row, MPI_COMM_WORLD);
         }
     }
     else
     {
         // process 0
-        for (int row = 1; row < process_cache_size - 1; row++)
+        for (int row = start_row; row < end_row; row++)
         {
-            copy_row(process_cache[row], input_matrix[row], matrix_size);
+            copy_row(input_matrix[row], input_matrix[row], matrix_size);
         }
 
         // other processes
         for (int process = 1; process < mpi_size; process++)
         {
-            for (int row = 1; row < process_cache_size - 1; row++)
-            {
-                float finalize_cache[matrix_size];
+            int target_start_row = process * rows_per_process + 1;
+            int target_end_row = (process + 1) * rows_per_process;
 
-                MPI_Recv(finalize_cache, matrix_size, MPI_FLOAT, process, process + row, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                copy_row(finalize_cache, input_matrix[process * rows_per_process + row], matrix_size);
+            for (int row = target_start_row; row <= target_end_row; row++)
+            {
+                MPI_Recv(input_matrix[row], matrix_size, MPI_FLOAT, process, row, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
         }
 
