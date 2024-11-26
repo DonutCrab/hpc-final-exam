@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         // END
         clock_t end_time = clock();
         double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-        printf("\nExecution time: %f seconds\n", time_taken);
+        printf("\nExecution time: %f seconds\n-----\n", time_taken);
 
         // export
         export_image("parallel_end", matrix_size, input_matrix);
