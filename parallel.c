@@ -4,12 +4,12 @@
 #include <mpi.h>
 #include <time.h>
 
-#include "qr.c"
-#include "image.c"
-#include "util.c"
+#include "input.c"
+#include "output.c"
+#include "row_copy.c"
 
 // mpicc parallel.c -o out/parallel -I/opt/homebrew/include -L/opt/homebrew/lib -lpng
-// mpirun -np 4 ./out/parallel
+// mpirun -np 4 ./out/parallel 20 4
 
 int main(int argc, char *argv[])
 {
@@ -28,46 +28,15 @@ int main(int argc, char *argv[])
     float k = 0.3;
     int steps = atoi(argv[1]);
 
-    int matrix_size = atoi(argv[2]) * 33 + 2;
+    int matrix_size = input_matrix_size(atoi(argv[2]));
     float input_matrix[matrix_size][matrix_size];
 
-    int pixel_multiplier = matrix_size / qr_size;
-    int offset = (matrix_size - (pixel_multiplier * qr_size)) / 2;
-
-    // TODO: extract
-    // fill input_matrix
-    // TODO: This is executed four times!
-    for (int i = 0; i < matrix_size; i++)
-    {
-        for (int j = 0; j < matrix_size; j++)
-        {
-            if (i < offset || j < offset)
-            {
-                input_matrix[i][j] = 0.0;
-            }
-            else
-            {
-                int qr_i = (i - offset) / pixel_multiplier;
-                int qr_j = (j - offset) / pixel_multiplier;
-
-                if (qr_i >= (qr_size) || qr_j >= (qr_size))
-                {
-                    input_matrix[i][j] = 0.0;
-                }
-                else
-                {
-                    input_matrix[i][j] = qr[qr_i][qr_j];
-                }
-            }
-        }
-    }
+    fill_matrix(matrix_size, input_matrix);
 
     // START
     clock_t start_time = clock();
 
     int rows_per_process = (matrix_size - 2) / mpi_size;
-
-    float cache_value;
 
     int process_cache_size = rows_per_process + 2;
     float process_cache[process_cache_size][matrix_size];
@@ -80,7 +49,7 @@ int main(int argc, char *argv[])
     // compute
     for (int time = 0; time < steps; time++)
     {
-        // printf("start step %d on process %d\n", time, mpi_rank);
+        float cache_value;
 
         for (int row = 1; row < process_cache_size - 1; row++)
         {
@@ -122,7 +91,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        // own content
+        // process 0
         for (int row = 1; row < process_cache_size - 1; row++)
         {
             copy_row(process_cache[row], input_matrix[row], matrix_size);

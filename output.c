@@ -1,6 +1,6 @@
-#include <png.h> // libpng
+#include "output.h"
+#include <png.h>
 
-// values between 0 and 1
 void export_image(char *file, int size, float matrix[size][size])
 {
     char name[strlen(file) + 9];

@@ -1,4 +1,4 @@
-// TODO: Util generally a bad pattern
+#include "row_copy.h"
 
 void copy_row(const float *from, float *to, int width)
 {

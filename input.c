@@ -1,3 +1,5 @@
+#include "input.h"
+
 const int qr_size = 33;
 
 float qr[qr_size][qr_size] = {
@@ -34,3 +36,38 @@ float qr[qr_size][qr_size] = {
     {0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1},
     {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1},
     {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1}};
+
+int input_matrix_size(int qr_size_multiplier)
+{
+    return qr_size * qr_size_multiplier + 2;
+}
+
+void fill_matrix(int size, float matrix[size][size])
+{
+    int pixel_multiplier = size / qr_size;
+
+    for (int row = 0; row < size; row++)
+    {
+        for (int col = 0; col < size; col++)
+        {
+            if (row < 1 || col < 1)
+            {
+                matrix[row][col] = 0.0;
+            }
+            else
+            {
+                int qr_i = (row - 1) / pixel_multiplier;
+                int qr_j = (col - 1) / pixel_multiplier;
+
+                if (qr_i >= (qr_size) || qr_j >= (qr_size))
+                {
+                    matrix[row][col] = 0.0;
+                }
+                else
+                {
+                    matrix[row][col] = qr[qr_i][qr_j];
+                }
+            }
+        }
+    }
+}

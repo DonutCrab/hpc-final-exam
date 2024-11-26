@@ -3,9 +3,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "qr.c"
-#include "image.c"
-#include "util.c"
+#include <src/export_image.h>
+#include <src/qr_code.h>
+#include <src/row_copy.h>
 
 // cc sequential.c -o out/sequential -I/opt/homebrew/include -L/opt/homebrew/lib -lpng
 // ./out/sequential
