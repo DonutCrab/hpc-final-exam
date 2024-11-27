@@ -110,23 +110,7 @@ int main(int argc, char *argv[])
 
         if (argc == 4)
         {
-            FILE *file = fopen("./out/benchmark.csv", "a");
-
-            if (file == NULL)
-            {
-                printf("Error opening file!\n");
-                return 1;
-            }
-
-            if (atoi(argv[2]) == 4)
-            {
-                fprintf(file, "Threads: %d", mpi_size);
-            }
-
-            // Format: "Threads, Steps, Size, Time\n"
-            fprintf(file, ",%f", time_taken);
-
-            fclose(file);
+            write_benchmark_output(atoi(argv[2]) == 4, mpi_size, time_taken);
         }
         else
         {

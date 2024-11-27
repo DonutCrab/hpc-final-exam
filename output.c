@@ -29,3 +29,17 @@ void export_image(char *file, int size, float matrix[size][size])
     png_destroy_write_struct(&png_out, &info_out);
     fclose(fp);
 }
+
+void write_benchmark_output(int first_col, int threads, float value)
+{
+    FILE *file = fopen("./out/benchmark.csv", "a");
+
+    if (first_col)
+    {
+        fprintf(file, "Threads: %d", threads);
+    }
+
+    fprintf(file, ",%f", value);
+
+    fclose(file);
+}
