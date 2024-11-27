@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
-    if (mpi_rank == 0)
+    if (argc < 4 && mpi_rank == 0)
     {
         printf("Steps: %s\n", argv[1]);
         printf("Size: %s\n", argv[2]);
@@ -107,10 +107,34 @@ int main(int argc, char *argv[])
         // END
         clock_t end_time = clock();
         double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-        printf("\nExecution time: %f seconds\n-----\n", time_taken);
 
-        // export
-        export_image("parallel_end", matrix_size, input_matrix);
+        if (argc == 4)
+        {
+            FILE *file = fopen("./out/benchmark.csv", "a");
+
+            if (file == NULL)
+            {
+                printf("Error opening file!\n");
+                return 1;
+            }
+
+            if (atoi(argv[2]) == 4)
+            {
+                fprintf(file, "Threads: %d", mpi_size);
+            }
+
+            // Format: "Threads, Steps, Size, Time\n"
+            fprintf(file, ",%f", time_taken);
+
+            fclose(file);
+        }
+        else
+        {
+            printf("\nExecution time: %f seconds\n-----\n", time_taken);
+
+            // export
+            export_image("parallel_end", matrix_size, input_matrix);
+        }
     }
 
     MPI_Finalize();
